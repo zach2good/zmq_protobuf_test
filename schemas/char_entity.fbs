@@ -1,0 +1,10 @@
+// namespace FB;
+
+table FBCharEntity
+{
+  id:uint;
+  name:string;
+  char_vars:string;
+}
+
+root_type FBCharEntity;
