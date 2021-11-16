@@ -1,5 +1,3 @@
-// https://github.com/igorskh/flatbuffers-zmq-tutorial-cpp
-
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
@@ -69,7 +67,6 @@ int main()
                 return 1;
             }
 
-            builder.Clear();
             ++counter;
 
             auto now = high_resolution_clock::now();

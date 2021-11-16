@@ -1,5 +1,3 @@
-// https://github.com/igorskh/flatbuffers-zmq-tutorial-cpp
-
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
 
