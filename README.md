@@ -1,12 +1,12 @@
-# ZMQ & Flatbuffers Example
+# ZMQ & Protocol Buffers Test
 
 ## Deps
 
 - spdlog
+- zlib
 - libzmq(static)
 - cppzmq(static)
-- flatbuffers
-- cereal
+- protobuf
 
 ## Build
 
@@ -14,16 +14,7 @@
 mkdir build
 cd build
 cmake ..
-cmake --build .
+cmake --build . -j8
 ```
 
-## Run
-
-```sh
-./world_server &
-./map_server &
-```
-
-# Tested on
-
-- WSL + Ubuntu 22.04
+NOTE: Build currently not working, but it takes _a long time_ just to build `absl` and `protoc`, so I'm not particularly willing to carry on with this.
