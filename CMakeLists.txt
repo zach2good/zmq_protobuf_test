@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project(mmo_test)
 
@@ -27,6 +27,11 @@ CPMAddPackage(
 ) # defines: spdlog
 
 CPMAddPackage(
+    GITHUB_REPOSITORY madler/zlib
+    VERSION 1.3.1
+) # defines: zlibstatic
+
+CPMAddPackage(
     GITHUB_REPOSITORY zeromq/libzmq
     VERSION 4.3.4
     OPTIONS
@@ -42,52 +47,50 @@ CPMAddPackage(
         "CPPZMQ_BUILD_TESTS NO"
 ) # defines: cppzmq-static
 
+set(ABSL_PROPAGATE_CXX_STD ON)
+set(protobuf_MODULE_COMPATIBLE ON)
+set(protobuf_MSVC_STATIC_RUNTIME OFF)
+set(protobuf_BUILD_SHARED_LIBS OFF)
+set(protobuf_SHARED_OR_STATIC "STATIC")
 CPMAddPackage(
-    GITHUB_REPOSITORY google/flatbuffers
-    VERSION 2.0.0
+    GITHUB_REPOSITORY protocolbuffers/protobuf
+    GIT_TAG 439c42c735ae1efed57ab7771986f2a3c0b99319 # v28.0
     OPTIONS
-        "FLATBUFFERS_BUILD_TESTS NO"
-        "FLATBUFFERS_BUILD_GRPCTEST NO"
-) # defines: flatbuffers
-
-CPMAddPackage(
-    NAME cereal
-    VERSION 1.3.0
-    GITHUB_REPOSITORY USCiLab/cereal
-    OPTIONS
-        "SKIP_PORTABILITY_TEST ON"
-        "JUST_INSTALL_CEREAL ON"
+        "protobuf_BUILD_TESTS NO"
 )
 
-set(FLATBUFFER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/schemas/char_entity.fbs
+# Protobuf-generated files
+set(PROTO_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/proto/message.pb.cc)
+set(PROTO_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/proto/message.pb.h)
+add_custom_command(
+    OUTPUT ${PROTO_SRCS} ${PROTO_HDRS}
+    COMMAND ${CMAKE_BINARY_DIR}/_deps/protobuf-build/Debug/protoc.exe
+    --cpp_out=${CMAKE_CURRENT_SOURCE_DIR}
+    --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/proto/message.proto
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/proto/message.proto ${CMAKE_BINARY_DIR}/_deps/protobuf-build/Debug/protoc.exe
 )
 
-set(WORLD_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/world/main.cpp
+set(SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 )
 
-set(MAP_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/map/main.cpp
-)
+message(STATUS "PROTO_SRCS: ${PROTO_SRCS}")
+message(STATUS "PROTO_HDRS: ${PROTO_HDRS}")
 
-flatbuffers_generate_headers(
-    TARGET generated_fbs
-    SCHEMAS ${FLATBUFFER_SOURCES}
-    #FLAGS --gen-object-api
-)
+add_executable(server ${PROTO_SRCS} ${PROTO_HDRS} ${SOURCES})
+target_include_directories(server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# server depends on protoc
+add_dependencies(server protoc)
 
 set(LIBS
     spdlog
+    zlibstatic
     libzmq-static
     cppzmq-static
-    flatbuffers
-    generated_fbs
-    cereal
+    protobuf::libprotobuf
 )
 
-add_executable(world_server ${WORLD_SOURCES})
-target_link_libraries(world_server PUBLIC ${LIBS})
-
-add_executable(map_server ${MAP_SOURCES})
-target_link_libraries(map_server PUBLIC ${LIBS})
+target_compile_definitions(server PUBLIC _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
+target_link_libraries(server PUBLIC ${LIBS})
